@@ -13,9 +13,19 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build docker image
-        run: docker build -t ${{ secrets.DOCKER_HUB_NAMESPACE }}/xgame-product-page-api:latest .
+        run: docker build -t ${{ secrets.DOCKER_HUB_NAMESPACE }}/mlhuillier-income-monitoring-api:latest .
 
       - name: Push image to DockerHub
         run: |
           docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
           docker push ${{ secrets.DOCKER_HUB_NAMESPACE }}/xgame-product-page-api:latest
+          
+      - name: SSH to NexGen Server
+        run: |
+          mkdir ~/.ssh
+          echo -e "${{ secrets.PRODUCTION_PRIVATE_KEY }}" > ~/.ssh/ssh-key
+          chmod 400 ~/.ssh/ssh-key
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ssh-key ${{ secrets.PRODUCTION_USERNAME }}@${{ secrets.PRODUCTION_HOST }} \
+            'cd ${{ secrets.PRODUCTION_PATH }} && \
+            docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }} && \
+            sh deploy_production.sh'
